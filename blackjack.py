@@ -10,11 +10,12 @@ root.configure(background='light blue')
 
 
 def stand():
-    global player_total, dealer_total, player_score, dealer_score
+    global dealer, player_total, dealer_total, player_score, dealer_score, is_standing
 
+    is_standing = True
     player_total = 0
     dealer_total = 0
-
+    display_second_dealer_card()
 
     for score in dealer_score:
         dealer_total += score
@@ -24,6 +25,7 @@ def stand():
 
     deal_button.config(state='disabled')
     stand_button.config(state='disabled')
+
 
     if dealer_total >= 17:
         if dealer_total > 21:
@@ -35,36 +37,46 @@ def stand():
                         dealer_total += score
                     if dealer_total > 21:
                         blackjack_status['player'] = 'bust'
+            display_second_dealer_card()
             messagebox.showinfo('Player Wins!', f'Player: {player_total}  Dealer: {dealer_total}')
         elif dealer_total == player_total:
+            display_second_dealer_card()
             messagebox.showinfo('Push', f'Player: {player_total}  Dealer: {dealer_total}')
         elif dealer_total > player_total:
+            display_second_dealer_card()
             messagebox.showinfo('Dealer Wins!', f'Player: {player_total}  Dealer: {dealer_total}')
         else:
+            display_second_dealer_card()
             messagebox.showinfo('Player wins!', f'Player: {player_total}  Dealer: {dealer_total}')
 
     else:
         dealer_hit()
         stand()
-def blackjack_shuffle(player):
-    global player_total, dealer_total, player_score
 
+
+def display_second_dealer_card():
+    dealer_image2 = resize_cards(f'PNG-cards-1.3/{dealer[1]}.png')
+    dealer_label_2.config(image=dealer_image2)
+
+def blackjack_shuffle(player):
+    global player_total, dealer_total, player_score, is_standing
+
+    is_standing = False
     player_total = 0
     dealer_total = 0
 
     if player == "dealer":
         if len(dealer_score) == 2:
-            if dealer_score[0] + dealer_score[1] == 21:
+            if sum(dealer_score) == 21:
                 blackjack_status['dealer'] = 'yes'
 
     if player == "player":
         if len(player_score) == 2:
-            if player_score[0] + player_score[1] == 21:
+            if sum(player_score) == 21:
                 blackjack_status['player'] = 'yes'
 
         else:
-            for score in player_score:
-                player_total += score
+            player_total = sum(player_score)
             if player_total == 21:
                 blackjack_status["player"] = 'yes'
             elif player_total > 21:
@@ -83,41 +95,46 @@ def blackjack_shuffle(player):
                     if player_total > 21:
                         blackjack_status['player'] = 'bust'
 
-                blackjack_status['player'] = 'bust'
-
-
     if len(dealer_score) == 2 and len(player_score) == 2:
         if blackjack_status['dealer'] == 'yes' and blackjack_status['player'] == 'yes':
+
+            display_second_dealer_card()
             messagebox.showinfo('Push!', 'It is a tie!')
             deal_button.config(state='disabled')
             stand_button.config(state='disabled')
 
         elif blackjack_status['dealer'] == 'yes':
-            messagebox.showinfo('Dealer Wins!')
+            display_second_dealer_card()
+            messagebox.showinfo('Dealer Wins!', f'Player: {player_total}  Dealer: {dealer_total}')
             deal_button.config(state='disabled')
             stand_button.config(state='disabled')
 
         elif blackjack_status['player'] == 'yes':
-            messagebox.showinfo('Player wins!')
+            display_second_dealer_card()
+            messagebox.showinfo('Player wins!', f'Player: {player_total}  Dealer: {dealer_total}')
             deal_button.config(state="disabled")
             stand_button.config(state="disabled")
     else:
         if blackjack_status['dealer'] == 'yes' and blackjack_status['player'] == 'yes':
+            display_second_dealer_card()
             messagebox.showinfo('Push!', 'It is a tie!')
             deal_button.config(state='disabled')
             stand_button.config(state='disabled')
 
         elif blackjack_status['dealer'] == 'yes':
+            display_second_dealer_card()
             messagebox.showinfo('Dealer Wins!', 'Blackjack!')
             deal_button.config(state='disabled')
             stand_button.config(state='disabled')
 
         elif blackjack_status['player'] == 'yes':
+            display_second_dealer_card()
             messagebox.showinfo('Player wins!', "BlackJack!")
             deal_button.config(state="disabled")
             stand_button.config(state="disabled")
 
     if blackjack_status['player'] == 'bust':
+        display_second_dealer_card()
         messagebox.showinfo('Player busts!', f"Player Loses! {player_total}")
 
         deal_button.config(state="disabled")
@@ -138,7 +155,7 @@ def resize_cards(card):
 
 # Shuffle the cards
 def shuffle():
-    global blackjack_status, player_total, dealer_total
+    global blackjack_status, player_total, dealer_total, is_standing
     player_total = 0
     dealer_total = 0
 
@@ -178,20 +195,21 @@ def shuffle():
     player_spot = 0
 
     dealer_hit()
-    dealer_hit()
+    dealer_hit(not is_standing)
     player_hit()
     player_hit()
 
     root.title(f'Blackjack - {len(deck)} cards left')
 
 
-def dealer_hit():
+def dealer_hit(should_obfuscate=False):
     global dealer_spot
     if dealer_spot < 5:
         try:
             dealer_card = random.choice(deck)
             deck.remove(dealer_card)
             dealer.append(dealer_card)
+            display_card = dealer_card if not should_obfuscate else 'card_back_black'
 
             dcard = int(dealer_card.split("_", 1)[0])
             if dcard == 14:
@@ -204,23 +222,23 @@ def dealer_hit():
             global dealer_image1, dealer_image2, dealer_image3, dealer_image4, dealer_image5
 
             if dealer_spot == 0:
-                dealer_image1 = resize_cards(f'PNG-cards-1.3/{dealer_card}.png')
+                dealer_image1 = resize_cards(f'PNG-cards-1.3/{display_card}.png')
                 dealer_label_1.config(image=dealer_image1)
                 dealer_spot += 1
             elif dealer_spot == 1:
-                dealer_image2 = resize_cards(f'PNG-cards-1.3/{dealer_card}.png')
+                dealer_image2 = resize_cards(f'PNG-cards-1.3/{display_card}.png')
                 dealer_label_2.config(image=dealer_image2)
                 dealer_spot += 1
             elif dealer_spot == 2:
-                dealer_image3 = resize_cards(f'PNG-cards-1.3/{dealer_card}.png')
+                dealer_image3 = resize_cards(f'PNG-cards-1.3/{display_card}.png')
                 dealer_label_3.config(image=dealer_image3)
                 dealer_spot += 1
             elif dealer_spot == 3:
-                dealer_image4 = resize_cards(f'PNG-cards-1.3/{dealer_card}.png')
+                dealer_image4 = resize_cards(f'PNG-cards-1.3/{display_card}.png')
                 dealer_label_4.config(image=dealer_image4)
                 dealer_spot += 1
             elif dealer_spot == 4:
-                dealer_image5 = resize_cards(f'PNG-cards-1.3/{dealer_card}.png')
+                dealer_image5 = resize_cards(f'PNG-cards-1.3/{display_card}.png')
                 dealer_label_5.config(image=dealer_image5)
                 dealer_spot += 1
 
